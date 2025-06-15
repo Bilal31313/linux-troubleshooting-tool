@@ -51,15 +51,3 @@ GitHub: Bilal31313
 📄 License
 MIT — use it, fork it, improve it.
 
-
----
-
-### ✅ Next Steps
-
-1. Save this as `README.md` in your Git repo folder.
-2. Then run:
-
-```bash
-git add README.md
-git commit -m "Add README documentation"
-git push
