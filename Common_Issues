@@ -91,9 +91,17 @@ select opt in "${options[@]}"; do
                 ;;
             *) echo "You have either not correctly answered yes or do not want to clear space." ;;
         esac
-    else
+        else
         echo "You do not have any business here today or have not selected a valid option."
     fi
+    elif [[ $REPLY -eq 5 ]]; then
+        echo "Exiting. Have a nice day."
+        break
+    else
+        echo "Invalid option: $REPLY"
+    fi
+done
+
 
 
 
