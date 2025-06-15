@@ -1,0 +1,109 @@
+#!/bin/bash
+
+#declare logfile
+logfile="$HOME/logs.txt"
+# User selects which common Issue they are dealing with
+
+PS3="What common issue can I help you with today? "
+
+#define options
+options=("Check High CPU" "Check Open Ports" "Check if Service is Active" "Check Disk Usage" "Exit")
+select opt in "${options[@]}"; do
+	echo "you have chosen "$opt" "
+#bash stores responses in $REPLY use to filter response
+	if [[ $REPLY -eq 1 ]]; then
+		echo "we are diagnosing high CPU"
+#test1 shows top process excluding header
+		test1=$(ps -eo pid,%cpu,cmd --sort=-%cpu | head -n 2 | tail -n 1)
+		echo "$test1 is your highest CPU running process"
+		read -p "would you like to kill the process (1) or renice the process (2) or do nothing (3): " input
+			if [[ "$input" = 1 ]]; then
+#get PID of high CPU process
+				pid=$(echo "$test1" | awk '{print $1}')
+				kill -15 "$pid"
+				echo "killed "$pid"" >> "$logfile"
+			elif [[ "$input" = 2 ]]; then
+				renice "$pid" -n 0 
+				echo "reniced "$pid"" >> "$logfile"
+			else
+				echo "no action taken"
+			fi
+	elif [[ $REPLY -eq  2 ]]; then
+#check open ports
+		read -p "what port are we checking for today? " port
+		op=$(lsof -i:$port)
+		if [[ -z "$op" ]]; then
+			echo "$port is not open"
+		else
+			echo "$port is open"
+		fi
+		read -p "would you like to verify your app is not running on localhost? (yes/no)" lh
+		test2=$(ss -tuln | grep "127.0.0.1:$port")
+		case "$lh" in
+			yes)
+				if [[ -z "$test2" ]]; then
+					echo "port is not running on local host"
+				else
+					echo "port is running on local host"
+				fi ;;
+			*) echo " you have either not entered yes correctly or do not want to test"
+		esac
+	elif [[ $REPLY -eq 3 ]]; then
+		read -p "what service are we verifying is active " sn
+		active=$(sudo systemctl is-active "$sn")
+		if [[ "$active" = "active" ]]; then
+			echo "service is active"
+		else 
+			sudo systemctl restart "$sn"
+			sleep 10s
+			active2=$(sudo systemctl is-active "$sn")
+			if [[ "$active2" = "active" ]]; then
+	                        echo "service is active"
+	                else  
+				logs=$(journalctl -u "$sn" -xe | tail -n 10)
+				echo " "$logs"  need to be investigated as restart has failed" >> "$logfile"
+			fi
+		fi  
+	elif [[ $REPLY -eq 4 ]]; then
+    read -p "Do you have a specific directory you'd like to check disk usage of? " d
+    if [[ ! -d "$d" ]]; then
+        echo "That directory doesn't exist."
+        return
+    fi
+
+    test3=$(du -s "$d" | awk '{print $1}')
+    if [[ $test3 -gt 60000 ]]; then
+        read -p "Would you like to clear some space? (yes/no): " space
+        case "$space" in
+            yes)
+                old_logs=$(find "$d" -type f -mtime +7)
+                echo "$old_logs"
+                echo "$old_logs" >> "$HOME/logs"
+                read -p "Would you like to delete these logs (yes/no): " ans
+                case "$ans" in
+                    yes)
+                        echo "$old_logs" | while read files; do
+                            sudo rm -r "$files"
+                        done
+                        ;;
+                    *) echo "You either do not want to delete the logs or have not answered yes." ;;
+                esac
+                ;;
+            *) echo "You have either not correctly answered yes or do not want to clear space." ;;
+        esac
+    else
+        echo "You do not have any business here today or have not selected a valid option."
+    fi
+
+
+
+
+
+
+
+
+
+
+
+
+
